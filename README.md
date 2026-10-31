@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Rift Forge
 
-## Getting Started
+A deck builder for the Riftbound trading card game. Installable web app (PWA) built with Next.js and TypeScript.
 
-First, run the development server:
+## Run it
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev     # http://localhost:3000
+npm test        # deck rule tests
+npm run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## How it's organised
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Path | What it holds |
+| --- | --- |
+| `src/lib/types.ts` | Card, Legend, Deck types and the six domains |
+| `src/lib/rules.ts` | Deck legality checks (`checkDeck`, `isLegalFor`, `RULES`) |
+| `src/lib/deckText.ts` | Plain-text deck list export and import |
+| `src/data/samplePool.ts` | **Placeholder** card pool used until real card data is loaded |
+| `src/components/DeckBuilder.tsx` | The builder UI |
+| `src/app/manifest.ts` | PWA manifest so the app can be installed on a phone |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Deck rules encoded
 
-## Learn More
+1 Champion Legend, a Chosen Champion that is a unit of that legend's champion, at least 40 main-deck cards
+(Chosen Champion included), at most 3 copies of any card, every card within the legend's two domains,
+at most 3 Signature cards, exactly 12 runes in the legend's domains, and 3 different battlefields.
+These still need checking against the current official Core Rules.
 
-To learn more about Next.js, take a look at the following resources:
+## Card data
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+`samplePool.ts` is invented data. Next step is a loader that pulls the real card list (official card gallery
+or a community card database) into a versioned JSON file with the same `CardPool` shape.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Roadmap
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Real card data and card images
+2. Deck stats: energy curve, domain split, card type mix
+3. Shareable deck links
+4. Accounts and cloud-saved decks
+5. Offline support via a service worker
