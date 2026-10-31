@@ -1,6 +1,6 @@
 import DeckBuilder from "@/components/DeckBuilder";
-import { samplePool } from "@/data/samplePool";
+import { pool } from "@/data/pool";
 
 export default function Home() {
-  return <DeckBuilder pool={samplePool} />;
+  return <DeckBuilder pool={pool} />;
 }

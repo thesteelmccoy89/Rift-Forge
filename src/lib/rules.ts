@@ -1,8 +1,8 @@
-import type { Card, CardPool, Deck, Legend } from "./types";
+import type { Card, CardPool, Deck, Domain, Legend } from "./types";
 
 /**
- * Riftbound constructed deck rules.
- * TODO: verify every value against the current official Core Rules before launch.
+ * Riftbound constructed deck rules, checked against Core Rules section 103
+ * (main deck 103.3, copies 103.3.b, signature 103.3.d, runes 103.4, battlefields 103.5).
  */
 export const RULES = {
   mainMin: 40,
@@ -19,10 +19,11 @@ export interface Check {
   detail: string;
 }
 
+/** Domain identity (103.2.b.1) plus Signature cards needing the legend's champion tag (103.3.d). */
 export function isLegalFor(card: Card, legend: Legend): boolean {
   return (
     card.domains.every((d) => legend.domains.includes(d)) &&
-    (card.tag === null || card.tag === legend.champ)
+    (!card.signature || card.tag === legend.champ)
   );
 }
 
@@ -53,7 +54,7 @@ export function checkDeck(deck: Deck, pool: CardPool): Check[] {
     return !c || !isLegalFor(c, legend);
   });
   const badRunes = Object.entries(deck.runes).filter(
-    ([d, q]) => (q ?? 0) > 0 && !legend.domains.includes(d as Legend["domains"][number]),
+    ([d, q]) => (q ?? 0) > 0 && !legend.domains.includes(d as Domain),
   );
   const uniqueBfs = new Set(deck.battlefields);
 

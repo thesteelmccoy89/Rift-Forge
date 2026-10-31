@@ -15,16 +15,22 @@ export interface Card {
   /** Champion name this card belongs to (champion units and Signature cards). */
   tag: string | null;
   signature: boolean;
+  image?: string;
+  rarity?: string;
+  set?: string;
 }
 
 export interface Legend {
   id: string;
   champ: string;
   title: string;
-  domains: [Domain, Domain];
+  domains: Domain[];
+  image?: string;
 }
 
 export interface CardPool {
+  /** Where the data came from, shown in the UI. */
+  source: { name: string; url?: string; fetchedAt?: string; placeholder: boolean };
   legends: Legend[];
   cards: Card[];
   battlefields: string[];
