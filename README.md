@@ -46,7 +46,7 @@ cards, runs the tests and build, and commits `cards.json` when the card list cha
 ## Roadmap
 
 1. ~~Real card data and card images~~
-2. Deck stats: energy curve, domain split, card type mix
+2. ~~Deck stats: energy curve, domain split, card type mix~~
 3. Shareable deck links
 4. Accounts and cloud-saved decks
 5. Offline support via a service worker
