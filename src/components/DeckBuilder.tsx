@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { checkDeck, deckTotals, isLegalFor, RULES } from "@/lib/rules";
 import { exportDeck, importDeck } from "@/lib/deckText";
+import { deckStats } from "@/lib/stats";
+import DeckStats from "./DeckStats";
 import { DOMAINS, type Card, type CardPool, type CardType, type Deck, type Domain } from "@/lib/types";
 
 const STORAGE_KEY = "riftforge.decks";
@@ -266,6 +268,8 @@ export default function DeckBuilder({ pool }: { pool: CardPool }) {
             ))}
             {!mainEntries.length && <span className="meta">Add cards from the pool.</span>}
           </div>
+          <div className="section-h"><span>Stats</span></div>
+          <DeckStats stats={deckStats(deck, byId)} />
           <div className="section-h"><span>Rune deck</span><span className="mono">{totals.runeQty}/{RULES.runes}</span></div>
           {legend.domains.map((d) => (
             <div className="runes" key={d}>
