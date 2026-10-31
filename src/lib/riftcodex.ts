@@ -87,3 +87,36 @@ export function mapRiftcodex(raw: RiftcodexCard[], fetchedAt?: string): CardPool
     battlefields,
   };
 }
+
+export const RIFTCODEX_API = "https://api.riftcodex.com";
+
+/** Downloads every card, 100 per page (the API maximum). Works in Node and in the browser. */
+export async function fetchRiftcodex(
+  base = RIFTCODEX_API,
+  opts: {
+    headers?: Record<string, string>;
+    signal?: AbortSignal;
+    onPage?: (page: number, pages: number, got: number, total: number) => void;
+  } = {},
+): Promise<RiftcodexCard[]> {
+  const all: RiftcodexCard[] = [];
+  for (let page = 1; ; page++) {
+    const url = `${base}/cards?page=${page}&size=100`;
+    const res = await fetch(url, { headers: { accept: "application/json", ...opts.headers }, signal: opts.signal });
+    const raw = await res.text();
+    if (!res.ok) throw new Error(`Riftcodex returned ${res.status} for ${url}: ${raw.slice(0, 300)}`);
+    let body: { items?: RiftcodexCard[]; pages?: number; total?: number };
+    try {
+      body = JSON.parse(raw);
+    } catch {
+      throw new Error(`Riftcodex sent something that isn't JSON for ${url}: ${raw.slice(0, 300)}`);
+    }
+    if (!Array.isArray(body.items)) {
+      throw new Error(`Unexpected response shape for ${url}. Keys: ${Object.keys(body).join(", ")}`);
+    }
+    all.push(...body.items);
+    const pages = body.pages ?? page;
+    opts.onPage?.(page, pages, all.length, body.total ?? all.length);
+    if (page >= pages || body.items.length === 0) return all;
+  }
+}

@@ -4,35 +4,14 @@
  */
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
-import { mapRiftcodex, type RiftcodexCard } from "../src/lib/riftcodex";
+import { fetchRiftcodex, mapRiftcodex } from "../src/lib/riftcodex";
 
 const BASE = process.env.RIFTCODEX_URL ?? "https://api.riftcodex.com";
-const SIZE = 100; // API maximum
-
-async function fetchAll(): Promise<RiftcodexCard[]> {
-  const all: RiftcodexCard[] = [];
-  for (let page = 1; ; page++) {
-    const url = `${BASE}/cards?page=${page}&size=${SIZE}`;
-    const res = await fetch(url, { headers: { accept: "application/json", "user-agent": "rift-forge-importer" } });
-    const raw = await res.text();
-    if (!res.ok) throw new Error(`Riftcodex returned ${res.status} for ${url}: ${raw.slice(0, 300)}`);
-    let body: { items: RiftcodexCard[]; pages: number; total: number };
-    try {
-      body = JSON.parse(raw);
-    } catch {
-      throw new Error(`Riftcodex sent something that isn't JSON for ${url}: ${raw.slice(0, 300)}`);
-    }
-    if (!Array.isArray(body.items)) {
-      throw new Error(`Unexpected response shape for ${url}. Keys: ${Object.keys(body).join(", ")}`);
-    }
-    all.push(...body.items);
-    console.log(`page ${page}/${body.pages}: ${all.length}/${body.total} cards`);
-    if (page >= body.pages || body.items.length === 0) return all;
-  }
-}
-
 async function main() {
-  const raw = await fetchAll();
+  const raw = await fetchRiftcodex(BASE, {
+    headers: { "user-agent": "rift-forge-importer" },
+    onPage: (page, pages, got, total) => console.log(`page ${page}/${pages}: ${got}/${total} cards`),
+  });
   const pool = mapRiftcodex(raw, new Date().toISOString());
   const kinds = new Map<string, number>();
   for (const c of raw) {

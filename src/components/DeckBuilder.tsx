@@ -133,8 +133,8 @@ export default function DeckBuilder({ pool }: { pool: CardPool }) {
       </header>
       {pool.source.placeholder ? (
         <div className="note">
-          Using a <strong>placeholder card pool</strong>. Card names, costs and text are invented. Run{" "}
-          <code>npm run import-cards</code> to load the real card list.
+          Showing <strong>sample cards</strong> until the real card list loads. Card names, costs and text are
+          invented.
         </div>
       ) : (
         <div className="note">
