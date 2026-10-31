@@ -15,7 +15,9 @@ function starterDeck(pool: CardPool, legendId: string): Deck {
     legendId,
     championId: champ?.id ?? null,
     main: {},
-    runes: { [legend.domains[0]]: 6, [legend.domains[1]]: 6 },
+    runes: Object.fromEntries(
+      legend.domains.map((d, i) => [d, Math.floor(RULES.runes / legend.domains.length) + (i < RULES.runes % legend.domains.length ? 1 : 0)]),
+    ),
     battlefields: [],
   };
 }
@@ -127,10 +129,19 @@ export default function DeckBuilder({ pool }: { pool: CardPool }) {
           <button onClick={() => setDeck(starterDeck(pool, deck.legendId))}>New deck</button>
         </div>
       </header>
-      <div className="note">
-        Using a <strong>placeholder card pool</strong>. Card names, costs, text and legend domain pairs are
-        invented until the real card list is loaded.
-      </div>
+      {pool.source.placeholder ? (
+        <div className="note">
+          Using a <strong>placeholder card pool</strong>. Card names, costs and text are invented. Run{" "}
+          <code>npm run import-cards</code> to load the real card list.
+        </div>
+      ) : (
+        <div className="note">
+          {pool.cards.length} cards from{" "}
+          {pool.source.url ? <a href={pool.source.url}>{pool.source.name}</a> : pool.source.name}
+          {pool.source.fetchedAt && `, updated ${pool.source.fetchedAt.slice(0, 10)}`}. Unofficial fan data, not
+          affiliated with Riot Games.
+        </div>
+      )}
 
       <div className="grid">
         <aside className="panel">
@@ -146,6 +157,10 @@ export default function DeckBuilder({ pool }: { pool: CardPool }) {
             ))}
           </select>
           <div className="legend-card">
+            {legend.image && (
+              // eslint-disable-next-line @next/next/no-img-element -- remote card art
+              <img className="art" src={legend.image} alt={legend.title} />
+            )}
             <div className="name">{legend.champ}</div>
             <div className="meta" style={{ marginBottom: 6 }}>{legend.title}</div>
             {legend.domains.map((d) => <DomainTag key={d} d={d} />)}
@@ -205,6 +220,10 @@ export default function DeckBuilder({ pool }: { pool: CardPool }) {
               const legal = isLegalFor(c, legend);
               return (
                 <div key={c.id} className={`card${legal ? "" : " off"}`}>
+                  {c.image && (
+                    // eslint-disable-next-line @next/next/no-img-element -- remote card art, no optimisation needed
+                    <img className="art" src={c.image} alt={c.name} loading="lazy" />
+                  )}
                   <div className="top">
                     <span className="cname">{c.name}</span>
                     <span className="cost" title="Energy cost">{c.energy}</span>

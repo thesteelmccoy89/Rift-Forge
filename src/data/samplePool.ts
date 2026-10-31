@@ -50,6 +50,7 @@ legends.forEach((l, i) => {
 });
 
 export const samplePool: CardPool = {
+  source: { name: "Placeholder sample cards", placeholder: true },
   legends,
   cards,
   battlefields: ["Sunken Temple", "Zaun Undercity", "Targon Peak", "Bandle Grove", "Shurima Ruins", "Noxian Arena", "Freljord Pass"],

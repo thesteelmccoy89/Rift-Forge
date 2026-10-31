@@ -43,6 +43,11 @@ describe("deck rules", () => {
     d.main["SIG-2"] = 1; // Viktor signature
     expect(failing(d)).toContain("domains");
   });
+  it("allows another champion's unit when it fits the domains", () => {
+    const d = legalDeck();
+    d.main["CHAMP-7"] = 1; // Darius, Rebel (Fury)
+    expect(failing(d)).toEqual([]);
+  });
   it("caps Signature cards at 3", () => {
     const d = legalDeck();
     d.main["SIG-1"] = 4;
