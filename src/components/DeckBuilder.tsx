@@ -5,6 +5,8 @@ import { checkDeck, deckTotals, isLegalFor, RULES } from "@/lib/rules";
 import { exportDeck, importDeck } from "@/lib/deckText";
 import { deckStats } from "@/lib/stats";
 import DeckStats from "./DeckStats";
+import CollectionView from "./CollectionView";
+import { loadCollection, missingForDeck, saveCollection, type Collection } from "@/lib/collection";
 import { DOMAINS, type Card, type CardPool, type CardType, type Deck, type Domain } from "@/lib/types";
 
 const STORAGE_KEY = "riftforge.decks";
@@ -45,8 +47,18 @@ export default function DeckBuilder({ pool }: { pool: CardPool }) {
   const [importing, setImporting] = useState(false);
   const [importText, setImportText] = useState("");
   const [toast, setToast] = useState("");
+  const [view, setView] = useState<"deck" | "collection">("deck");
+  const [collection, setCollection] = useState<Collection>({});
+  const [ownedOnly, setOwnedOnly] = useState(false);
 
-  useEffect(() => setSaved(loadSaved()), []);
+  useEffect(() => {
+    setSaved(loadSaved());
+    setCollection(loadCollection());
+  }, []);
+  const updateCollection = (c: Collection) => {
+    setCollection(c);
+    if (!saveCollection(c)) setToast("This browser blocked saving your collection.");
+  };
   useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(""), 2500);
@@ -62,6 +74,7 @@ export default function DeckBuilder({ pool }: { pool: CardPool }) {
   const shown = pool.cards
     .filter((c) => {
       if (legalOnly && !isLegalFor(c, legend)) return false;
+      if (ownedOnly && !collection[c.id]) return false;
       if (type && c.type !== type) return false;
       if (cost && (cost === "6" ? c.energy < 6 : c.energy !== Number(cost))) return false;
       if (doms.length && !c.domains.some((d) => doms.includes(d))) return false;
@@ -113,12 +126,19 @@ export default function DeckBuilder({ pool }: { pool: CardPool }) {
     (a, b) => (byId.get(a[0])?.energy ?? 0) - (byId.get(b[0])?.energy ?? 0),
   );
   const champ = deck.championId ? byId.get(deck.championId) : undefined;
+  const missing = missingForDeck(deck, collection);
+  const missingQty = missing.reduce((n, m) => n + m.missing, 0);
+  const hasCollection = Object.keys(collection).length > 0;
 
   return (
     <>
       <header>
         <h1>Rift Forge</h1>
-        <div className="wrap" style={{ margin: 0 }}>
+        <nav className="tabs" aria-label="View">
+          <button aria-pressed={view === "deck"} onClick={() => setView("deck")}>Deck builder</button>
+          <button aria-pressed={view === "collection"} onClick={() => setView("collection")}>My collection</button>
+        </nav>
+        <div className="wrap" style={{ margin: 0, visibility: view === "deck" ? "visible" : "hidden" }}>
           <input
             id="deck-name"
             type="text"
@@ -145,6 +165,12 @@ export default function DeckBuilder({ pool }: { pool: CardPool }) {
         </div>
       )}
 
+      {view === "collection" ? (
+        <>
+          <CollectionView pool={pool} collection={collection} onChange={updateCollection} notify={setToast} />
+          <div className="toast" role="status">{toast}</div>
+        </>
+      ) : (
       <div className="grid">
         <aside className="panel">
           <h2>Champion Legend</h2>
@@ -217,9 +243,15 @@ export default function DeckBuilder({ pool }: { pool: CardPool }) {
             <input id="legal-only" type="checkbox" checked={legalOnly} onChange={(e) => setLegalOnly(e.target.checked)} />{" "}
             Only show cards legal for this legend
           </label>
+          <label className="small">
+            <input id="owned-only" type="checkbox" checked={ownedOnly} onChange={(e) => setOwnedOnly(e.target.checked)} />{" "}
+            Only show cards I own
+          </label>
           <div className="cards">
             {shown.map((c) => {
               const legal = isLegalFor(c, legend);
+              const have = collection[c.id] ?? 0;
+              const used = copies(c);
               return (
                 <div key={c.id} className={`card${legal ? "" : " off"}`}>
                   {c.image && (
@@ -240,6 +272,12 @@ export default function DeckBuilder({ pool }: { pool: CardPool }) {
                     {c.power > 0 && ` · Power ${c.power}`} · <span className="mono">{c.id}</span>
                   </div>
                   <div className="txt">{c.text}</div>
+                  {hasCollection && (
+                    <div className={`own${used > have ? " short" : have ? " full" : ""}`}>
+                      Own {have}
+                      {used > have && ` · need ${used - have} more`}
+                    </div>
+                  )}
                   <div className="act">
                     <button aria-label={`Remove one ${c.name}`} onClick={() => change(c.id, -1)} disabled={!deck.main[c.id]}>−</button>
                     <span className="mono">{copies(c)}</span>
@@ -268,6 +306,27 @@ export default function DeckBuilder({ pool }: { pool: CardPool }) {
             ))}
             {!mainEntries.length && <span className="meta">Add cards from the pool.</span>}
           </div>
+          {!hasCollection && (
+            <p className="meta">Add your cards under <strong>My collection</strong> to see which ones this deck still needs.</p>
+          )}
+          {hasCollection && (
+            <>
+              <div className="section-h">
+                <span>Missing from collection</span>
+                <span className="mono">{missingQty} cards</span>
+              </div>
+              <div className="list">
+                {missing.map((m) => (
+                  <div className="row" key={m.id}>
+                    <span className="mono">{m.missing}×</span>
+                    <span>{byId.get(m.id)?.name ?? m.id}</span>
+                    <span className="mono">own {m.have}</span>
+                  </div>
+                ))}
+                {!missing.length && <span className="meta">You own every card in this deck.</span>}
+              </div>
+            </>
+          )}
           <div className="section-h"><span>Stats</span></div>
           <DeckStats stats={deckStats(deck, byId)} />
           <div className="section-h"><span>Rune deck</span><span className="mono">{totals.runeQty}/{RULES.runes}</span></div>
@@ -325,6 +384,7 @@ export default function DeckBuilder({ pool }: { pool: CardPool }) {
           </div>
         </aside>
       </div>
+      )}
     </>
   );
 }
