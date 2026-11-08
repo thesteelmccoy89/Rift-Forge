@@ -33,7 +33,9 @@ const PLAYABLE: Record<string, CardType> = { unit: "Unit", spell: "Spell", gear:
 const isDomain = (d: string): d is Domain => (DOMAINS as readonly string[]).includes(d);
 const lower = (s?: string | null) => (s ?? "").trim().toLowerCase();
 const labels = (c: CommunityCard) => new Set([c.cardType, ...(c.cardTypeLabels ?? [])].map(lower));
-const fullName = (c: CommunityCard) => c.fullName || (c.subtitle ? `${c.name}, ${c.subtitle}` : c.name);
+/** Starter-deck reprints carry a ", Starter" suffix; they are the same card. */
+const fullName = (c: CommunityCard) =>
+  (c.fullName || (c.subtitle ? `${c.name}, ${c.subtitle}` : c.name)).replace(/,\s*Starter$/i, "");
 
 /**
  * Showcase, alternate-art and promo prints repeat a base card. Lower rank = preferred print.
@@ -55,17 +57,21 @@ export function mapCommunityCards(raw: CommunityCard[], fetchedAt?: string): Car
   }
   const unique = [...byName.values()];
 
+  // Champion units are named after their champion ("Teemo, Scout" has name "Teemo"). Tags can also hold
+  // regions or tribes ("Yordle"), so champion tags are matched against these names.
+  const champNames = new Set(unique.filter((c) => labels(c).has("champion") && !labels(c).has("legend")).map((c) => c.name));
+  const champTag = (c: CommunityCard) => (c.tags ?? []).find((t) => champNames.has(t)) ?? null;
+
   const legends: Legend[] = unique
     .filter((c) => labels(c).has("legend"))
     .map((c) => ({
       id: c.cardCode,
-      champ: c.tags?.[0] ?? c.name,
+      champ: champTag(c) ?? c.tags?.[0] ?? c.name,
       title: fullName(c),
       domains: (c.domains ?? []).filter(isDomain),
       image: c.imageUrl ?? undefined,
     }))
     .sort((a, b) => a.champ.localeCompare(b.champ) || a.title.localeCompare(b.title));
-  const champNames = new Set(legends.map((l) => l.champ));
 
   const cards: Card[] = [];
   for (const c of unique) {
@@ -84,7 +90,7 @@ export function mapCommunityCards(raw: CommunityCard[], fetchedAt?: string): Car
       power: c.power ?? 0,
       might: c.might ?? null,
       text: c.abilityEffective ?? c.abilityOriginal ?? "",
-      tag: isChampion || signature ? ((c.tags ?? []).find((t) => champNames.has(t)) ?? null) : null,
+      tag: isChampion ? c.name : signature ? champTag(c) : null,
       signature,
       image: c.imageUrl ?? undefined,
       rarity: c.rarity ?? undefined,
@@ -94,7 +100,7 @@ export function mapCommunityCards(raw: CommunityCard[], fetchedAt?: string): Car
   cards.sort((a, b) => a.energy - b.energy || a.name.localeCompare(b.name));
 
   const battlefields = unique
-    .filter((c) => labels(c).has("battlefield"))
+    .filter((c) => labels(c).has("battlefield") && !labels(c).has("token"))
     .map(fullName)
     .sort();
 

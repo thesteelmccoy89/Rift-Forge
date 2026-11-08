@@ -28,6 +28,10 @@ const raw: CommunityCard[] = [
   card({ name: "Bomb", cardType: "Gear", cardTypeLabels: ["Gear", "Token"] }),
   card({ name: "Fury Rune", cardType: "Rune", cardTypeLabels: ["Rune", "Basic"], energy: null }),
   card({ name: "Zaun Warrens", cardType: "Battlefield", cardTypeLabels: ["Battlefield"], domains: [] }),
+  card({ name: "Teemo", subtitle: "Scout", cardType: "Unit", cardTypeLabels: ["Unit", "Champion"], tags: ["Yordle", "Teemo"], might: 2 }),
+  card({ name: "Swift Scout", cardType: "Legend", cardTypeLabels: ["Legend"], domains: ["Mind", "Chaos"], tags: ["Yordle", "Teemo"] }),
+  card({ name: "Caitlyn", subtitle: "Patrolling", cardType: "Unit", cardTypeLabels: ["Unit", "Champion"], tags: ["Piltover"] }),
+  card({ name: "Annie", subtitle: "Dark Child", fullName: "Annie, Dark Child, Starter", cardType: "Legend", cardTypeLabels: ["Legend"], domains: ["Fury", "Chaos"], tags: ["Annie"] }),
   card({ name: "Long Sword", cardType: "Gear", cardTypeLabels: ["Gear"], domains: ["Body"] }),
 ];
 const pool = mapCommunityCards(raw, "2026-11-08T00:00:00Z");
@@ -35,13 +39,21 @@ const get = (name: string) => pool.cards.find((c) => c.name === name);
 
 describe("mapCommunityCards", () => {
   it("turns Legend cards into legends keyed by champion tag", () => {
-    expect(pool.legends).toEqual([
-      expect.objectContaining({ champ: "Jinx", title: "Jinx, Loose Cannon", domains: ["Fury", "Chaos"] }),
-    ]);
+    expect(pool.legends.find((l) => l.champ === "Jinx")).toMatchObject({ title: "Jinx, Loose Cannon", domains: ["Fury", "Chaos"] });
   });
   it("marks champion units and prefers the base print over Showcase", () => {
     expect(pool.cards.filter((c) => c.name === "Jinx, Rebel")).toHaveLength(1);
     expect(get("Jinx, Rebel")).toMatchObject({ id: "rad-001-002", type: "Champion", tag: "Jinx", might: 5, power: 1 });
+  });
+  it("picks the champion tag over tribe or region tags", () => {
+    expect(pool.legends.find((l) => l.title === "Swift Scout")).toMatchObject({ champ: "Teemo" });
+    expect(get("Teemo, Scout")).toMatchObject({ tag: "Teemo" });
+  });
+  it("tags champion units even when their champion has no legend", () => {
+    expect(get("Caitlyn, Patrolling")).toMatchObject({ type: "Champion", tag: "Caitlyn" });
+  });
+  it("drops the Starter suffix from starter-deck reprints", () => {
+    expect(pool.legends.map((l) => l.title)).toContain("Annie, Dark Child");
   });
   it("marks Signature cards with their champion", () => {
     expect(get("Super Mega Death Rocket")).toMatchObject({ signature: true, tag: "Jinx", type: "Spell" });
@@ -51,7 +63,7 @@ describe("mapCommunityCards", () => {
   });
   it("leaves tokens, runes, legends and battlefields out of the card pool", () => {
     expect(pool.cards.map((c) => c.name).sort()).toEqual(
-      ["Amateur Demolitionist", "Jinx, Rebel", "Long Sword", "Super Mega Death Rocket"],
+      ["Amateur Demolitionist", "Caitlyn, Patrolling", "Jinx, Rebel", "Long Sword", "Super Mega Death Rocket", "Teemo, Scout"],
     );
     expect(pool.battlefields).toEqual(["Zaun Warrens"]);
   });
