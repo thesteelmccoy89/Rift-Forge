@@ -140,7 +140,7 @@ export default function DeckBuilder({ pool }: { pool: CardPool }) {
         <div className="note">
           {pool.cards.length} cards from{" "}
           {pool.source.url ? <a href={pool.source.url}>{pool.source.name}</a> : pool.source.name}
-          {pool.source.fetchedAt && `, updated ${pool.source.fetchedAt.slice(0, 10)}`}. Unofficial fan data, not
+          {pool.source.fetchedAt && `, updated ${pool.source.fetchedAt.slice(0, 10)}`}. Community data from Riot&apos;s card gallery, not
           affiliated with Riot Games.
         </div>
       )}
@@ -325,6 +325,10 @@ export default function DeckBuilder({ pool }: { pool: CardPool }) {
           </div>
         </aside>
       </div>
+      <footer className="legal">
+        Rift Forge was created under Riot Games&apos; &ldquo;Legal Jibber Jabber&rdquo; policy using assets owned by
+        Riot Games. Riot Games does not endorse or sponsor this project.
+      </footer>
     </>
   );
 }

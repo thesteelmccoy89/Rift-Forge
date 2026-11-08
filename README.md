@@ -19,7 +19,7 @@ npm run import-cards   # download the real card list into src/data/cards.json
 | `src/lib/types.ts` | Card, Legend, Deck types and the six domains |
 | `src/lib/rules.ts` | Deck legality checks (`checkDeck`, `isLegalFor`, `RULES`) |
 | `src/lib/deckText.ts` | Plain-text deck list export and import |
-| `src/lib/riftcodex.ts` | Converts Riftcodex API cards into our card format |
+| `src/lib/communityCards.ts` | Converts the community card dataset into our card format |
 | `scripts/import-cards.ts` | Downloads every card and writes `src/data/cards.json` |
 | `src/data/pool.ts` | Uses `cards.json` when it has data, otherwise the placeholder pool |
 | `src/data/samplePool.ts` | **Placeholder** card pool used until real card data is loaded |
@@ -36,9 +36,10 @@ Signature cards must match your legend's champion.
 
 ## Card data
 
-Cards come from the [Riftcodex](https://riftcodex.com) open API, an unofficial fan project that is not
-affiliated with Riot Games. `npm run import-cards` writes `src/data/cards.json`. Until that file has data
-(it is `null` in a fresh clone) the app falls back to the invented sample cards.
+Cards come from the community [riftbound-cards dataset](https://huggingface.co/datasets/Wysme/riftbound-cards)
+on Hugging Face, which is scraped from Riot's official card gallery and includes errata. `npm run import-cards`
+writes `src/data/cards.json`. Until that file has data (it is `null` in a fresh clone) the app falls back to the
+invented sample cards. Set `CARDS_URL` to import from a different copy of the same file.
 
 The **Update card data** GitHub Action runs every Monday, or on demand from the Actions tab. It imports the
 cards, runs the tests and build, and commits `cards.json` when the card list changed.
@@ -50,3 +51,8 @@ cards, runs the tests and build, and commits `cards.json` when the card list cha
 3. Shareable deck links
 4. Accounts and cloud-saved decks
 5. Offline support via a service worker
+
+## Legal
+
+Rift Forge was created under Riot Games' "Legal Jibber Jabber" policy using assets owned by Riot Games.
+Riot Games does not endorse or sponsor this project.

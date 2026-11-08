@@ -1,6 +1,6 @@
 name: Update card data
 
-# Pulls the latest card list from Riftcodex and commits src/data/cards.json when it changes.
+# Pulls the latest community card dataset (scraped from Riot's card gallery) and commits src/data/cards.json when it changes.
 on:
   workflow_dispatch:
   schedule:
@@ -35,5 +35,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898333+github-actions[bot]@users.noreply.github.com"
           git add src/data/cards.json
-          git commit -m "Update card data from Riftcodex"
+          git commit -m "Update card data"
           git push

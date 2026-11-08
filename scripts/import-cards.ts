@@ -1,29 +1,38 @@
 /**
- * Downloads every card from the Riftcodex API and writes src/data/cards.json.
+ * Downloads the community Riftbound card dataset and writes src/data/cards.json.
  * Run with: npm run import-cards
  */
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
-import { mapRiftcodex, type RiftcodexCard } from "../src/lib/riftcodex";
+import { DATASET_JSON, mapCommunityCards, type CommunityCard } from "../src/lib/communityCards";
 
-const BASE = process.env.RIFTCODEX_URL ?? "https://api.riftcodex.com";
-const SIZE = 100; // API maximum
+const SOURCE = process.env.CARDS_URL ?? DATASET_JSON;
 
-async function fetchAll(): Promise<RiftcodexCard[]> {
-  const all: RiftcodexCard[] = [];
-  for (let page = 1; ; page++) {
-    const res = await fetch(`${BASE}/cards?page=${page}&size=${SIZE}`);
-    if (!res.ok) throw new Error(`Riftcodex returned ${res.status} for page ${page}`);
-    const body = (await res.json()) as { items: RiftcodexCard[]; pages: number; total: number };
-    all.push(...body.items);
-    console.log(`page ${page}/${body.pages}: ${all.length}/${body.total} cards`);
-    if (page >= body.pages || body.items.length === 0) return all;
-  }
-}
+/** Lines starting with :: become GitHub Actions annotations, which show on the run summary. */
+const notice = (msg: string) => console.log(process.env.GITHUB_ACTIONS ? `::notice title=Card import::${msg}` : msg);
 
 async function main() {
-  const raw = await fetchAll();
-  const pool = mapRiftcodex(raw, new Date().toISOString());
+  const res = await fetch(SOURCE, { headers: { accept: "application/json" } });
+  const body = await res.text();
+  if (!res.ok) throw new Error(`${SOURCE} returned ${res.status}: ${body.slice(0, 300)}`);
+  let raw: CommunityCard[];
+  try {
+    raw = JSON.parse(body);
+  } catch {
+    throw new Error(`${SOURCE} sent something that isn't JSON: ${body.slice(0, 300)}`);
+  }
+  if (!Array.isArray(raw)) throw new Error(`Expected a list of cards from ${SOURCE}, got ${typeof raw}`);
+
+  const pool = mapCommunityCards(raw, new Date().toISOString());
+  const kinds = new Map<string, number>();
+  for (const c of raw) {
+    const k = (c.cardTypeLabels ?? [c.cardType]).join("+");
+    kinds.set(k, (kinds.get(k) ?? 0) + 1);
+  }
+  notice(
+    `Downloaded ${raw.length} cards. Card kinds: ${[...kinds].map(([k, n]) => `${k}=${n}`).join(", ")}. ` +
+      `Kept ${pool.cards.length} cards, ${pool.legends.length} legends, ${pool.battlefields.length} battlefields.`,
+  );
   if (!pool.legends.length || pool.cards.length < 100) {
     throw new Error(`Import looks wrong: ${pool.legends.length} legends, ${pool.cards.length} cards. Not writing.`);
   }
@@ -32,6 +41,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error(err);
+  console.error(process.env.GITHUB_ACTIONS ? `::error title=Card import failed::${err?.message ?? err}` : err);
   process.exit(1);
 });
